@@ -6,6 +6,14 @@ raw_users = [
     {"id": 5, "username": "eve", "email": "eve@example.com", "role": "subscriber", "password_hash": "hash_111", "is_active": True},
 ]
 
+# Write a function named transform_user_directory(users: list[dict]) 
+#               -> dict[str, list[dict]] that satisfies these requirements:
+#   Filter:     Include only active users ("is_active": True).
+#   Sanitize:   The output dictionaries must contain only id, username, and email. 
+#               Omit password_hash and all other fields.
+#   Group:      Return a single dictionary where keys are the role (e.g., "admin", "editor", "subscriber") 
+#               and values are lists of the sanitized user dictionaries belonging to that role.
+
 # Expected Output
 {
     "admin": [
@@ -21,7 +29,11 @@ raw_users = [
 }
 
 def transform_user_directory(users: list[dict]) -> dict[str, list[dict]]:
-    # Filter
+    # Filter inactive users
     active = [user for user in users if users["is_active"]]
-    # Sanitize
-    
+    # Sanitize (id, username, and email)
+    allowed_keys = ("id", "username", "email")
+    sanitized = [
+        {k: user[k] for k in allowed_keys if k in user} for user in users
+    ]
+
