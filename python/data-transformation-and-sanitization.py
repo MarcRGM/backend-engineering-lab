@@ -34,7 +34,7 @@ def transform_user_directory(users: list[dict]) -> dict[str, list[dict]]:
     # Filter inactive users
     active = [user for user in users if user["is_active"]]
     # Sanitize using whitelisting and Group based on roles
-    grouped = defaultdict(list)
+    grouped: dict[str, list[dict]] = defaultdict(list)
     allowed_keys = ("id", "username", "email")
     for user in active:
         sanitized_user = {k: user[k] for k in allowed_keys if k in user} # Dictionary comprehension
