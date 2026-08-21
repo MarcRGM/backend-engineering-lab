@@ -39,7 +39,7 @@ def transform_user_directory(users: list[dict]) -> dict[str, list[dict]]:
     for user in active:
         sanitized_user = {k: user[k] for k in allowed_keys if k in user} # Dictionary comprehension
         grouped[user["role"]].append(sanitized_user)
-    return dict(grouped)
+    return dict(grouped) # convert to dict for cleaner output
 
 if __name__ == "__main__":
     print(transform_user_directory(raw_users))
