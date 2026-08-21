@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 raw_users = [
     {"id": 1, "username": "alice", "email": "alice@example.com", "role": "admin", "password_hash": "hash_123", "is_active": True},
     {"id": 2, "username": "bob", "email": "bob@example.com", "role": "subscriber", "password_hash": "hash_456", "is_active": False},
@@ -30,10 +32,16 @@ raw_users = [
 
 def transform_user_directory(users: list[dict]) -> dict[str, list[dict]]:
     # Filter inactive users
-    active = [user for user in users if users["is_active"]]
-    # Sanitize (id, username, and email)
+    active = [user for user in users if user["is_active"]]
+    # Sanitize using whitelisting and Group based on roles
+    grouped = defaultdict(list)
     allowed_keys = ("id", "username", "email")
-    sanitized = [
-        {k: user[k] for k in allowed_keys if k in user} for user in users
-    ]
+    for user in active:
+        sanitized_user = {k: user[k] for k in allowed_keys if k in user} # Dictionary comprehension
+        grouped[user["role"]].append(sanitized_user)
+    return dict(grouped)
 
+if __name__ == "__main__":
+    print(transform_user_directory(raw_users))
+
+       
