@@ -32,7 +32,7 @@ raw_users = [
 
 def transform_user_directory(users: list[dict]) -> dict[str, list[dict]]:
     # Filter inactive users
-    active = [user for user in users if user["is_active"]]
+    active = [user for user in users if user["is_active"]] # List comprehension
     # Sanitize using whitelisting and Group based on roles
     grouped: dict[str, list[dict]] = defaultdict(list)
     allowed_keys = ("id", "username", "email")
