@@ -23,23 +23,24 @@ raw_stream = [
     "valid_records": 6,
     "corrupted_records": 4,
     "critical_incidents": 2,
-    "total_latency_seconds": 4.3507, # (150.5 + 2500.0 + 1200.0 + 80.2 + 1500.0 + 120.0 - check validity) -> calculated based on 5 valid entries
-    "average_latency_ms": 1090.14 # Average across valid records rounded to 2 decimal places
+    "total_latency_seconds": 5.5507, # (150.5 + 2500.0 + 1200.0 + 80.2 + 1500.0 + 120.0 - check validity) -> calculated based on 5 valid entries
+    "average_latency_ms": 925.12 # Average across valid records rounded to 2 decimal places
 }
 
-def validate_and_filter(records: list[str]) -> list[str], int:
+def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
     records_copy = records.copy()
+    corrupted_count = 0
+    critical_count = 0
     for idx in range(len(records_copy)-1, -1, -1): # Start from end since pop shifts the index
         record = records_copy[idx].split("|")
-        corrupted_count = 0
         # Validate
         if len(record) != 5: 
             records_copy[idx] = "corrupted"
-            corrupted+=1
+            corrupted_count+=1
             continue 
         elif record[1] == "unknown" or record[1] == "": 
             records_copy.pop(idx) 
-            corrupted+=1
+            corrupted_count+=1
             continue
         # Filter
         for val in record:
@@ -48,11 +49,23 @@ def validate_and_filter(records: list[str]) -> list[str], int:
         # Type Cast
         record[2], record[3] = int(record[2]), float(record[3])
         record[4] = bool(record[4]) if record[4] == "true" or record[4] == "1" else bool("")
-    return records_copy, corrupted_count
+        if record[1] == "auth-service" and (record[2] >= 500 or record[3] > 1000.0):
+            critical_count+=1
+        records_copy[idx] = record # Update
+    return records_copy, corrupted_count, critical_count
 
-def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int) -> dict[str, int | float]:
-    
+def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int, critical_count: int) -> dict[str, int | float]:
+    total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)]) # make it fast by adding [] inside sum(), current one is memory efficient
+    metrics = {
+        "total_raw_records": len(orig_records),
+        "valid_records": len(orig_records) - corrupted_count,
+        "corrupted_records": corrupted_count,
+        "critical_incidents": critical_count,
+        "total_latency_seconds": total_ms / 1000, # (total_ms / 1000) 
+        "average_latency_ms": round(total_ms / len(filtered_records), 2)
+    }
+    return metrics
 
 if __name__ == "__main__":
-    filtered_records, corrupted_count = validate_and_filter(raw_stream)
-    process_records(raw_stream, filtered_records, corrupted_count)
+    filtered_records, corrupted_count, critical_count = validate_and_filter(raw_stream)
+    print(process_records(raw_stream, filtered_records, corrupted_count, critical_count))
