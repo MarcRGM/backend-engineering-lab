@@ -20,23 +20,26 @@ raw_stream = [
 # Expected Output
 {
     "total_raw_records": 10,
-    "valid_records": 5,
-    "corrupted_records": 5,
+    "valid_records": 6,
+    "corrupted_records": 4,
     "critical_incidents": 2,
     "total_latency_seconds": 4.3507, # (150.5 + 2500.0 + 1200.0 + 80.2 + 1500.0 + 120.0 - check validity) -> calculated based on 5 valid entries
     "average_latency_ms": 1090.14 # Average across valid records rounded to 2 decimal places
 }
 
-def validate_and_filter(records: list[str]) -> list[str]:
+def validate_and_filter(records: list[str]) -> list[str], int:
     records_copy = records.copy()
     for idx in range(len(records_copy)-1, -1, -1): # Start from end since pop shifts the index
         record = records_copy[idx].split("|")
+        corrupted_count = 0
         # Validate
         if len(record) != 5: 
             records_copy[idx] = "corrupted"
+            corrupted+=1
             continue 
-        elif record[1] == "unknown": 
+        elif record[1] == "unknown" or record[1] == "": 
             records_copy.pop(idx) 
+            corrupted+=1
             continue
         # Filter
         for val in record:
@@ -45,7 +48,11 @@ def validate_and_filter(records: list[str]) -> list[str]:
         # Type Cast
         record[2], record[3] = int(record[2]), float(record[3])
         record[4] = bool(record[4]) if record[4] == "true" or record[4] == "1" else bool("")
-    return records_copy
+    return records_copy, corrupted_count
+
+def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int) -> dict[str, int | float]:
+    
 
 if __name__ == "__main__":
-    print(validate_and_filter(raw_stream))
+    filtered_records, corrupted_count = validate_and_filter(raw_stream)
+    process_records(raw_stream, filtered_records, corrupted_count)
