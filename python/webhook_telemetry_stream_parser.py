@@ -55,7 +55,7 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
     return records_copy, corrupted_count, critical_count
 
 def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int, critical_count: int) -> dict[str, int | float]:
-    total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)]) # make it fast by adding [] inside sum(), current one is memory efficient
+    total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)])
     metrics = {
         "total_raw_records": len(orig_records),
         "valid_records": len(orig_records) - corrupted_count,
