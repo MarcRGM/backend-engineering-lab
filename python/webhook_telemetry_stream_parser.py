@@ -56,13 +56,14 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
 
 def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int, critical_count: int) -> dict[str, int | float]:
     total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)])
+    valid_records = len(orig_records) - corrupted_count
     metrics = {
         "total_raw_records": len(orig_records),
-        "valid_records": len(orig_records) - corrupted_count,
+        "valid_records": valid_records,
         "corrupted_records": corrupted_count,
         "critical_incidents": critical_count,
         "total_latency_seconds": total_ms / 1000, # (total_ms / 1000) 
-        "average_latency_ms": round(total_ms / len(filtered_records), 2)
+        "average_latency_ms": round(total_ms / valid_records, 2)
     }
     return metrics
 
