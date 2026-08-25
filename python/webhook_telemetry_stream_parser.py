@@ -27,7 +27,7 @@ raw_stream = [
     "average_latency_ms": 925.12 # Average across valid records rounded to 2 decimal places
 }
 
-def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
+def validate_and_filter(records: list[str]) -> tuple[list[str], int, int, float]:
     valid_records = []
     corrupted_count = 0
     critical_count = 0
@@ -69,7 +69,7 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
 def process_records(raw_records: list[str], valid_records: list[str], corrupted_count: int, critical_count: int, total_latency_ms: float) -> dict[str, int | float]:
     metrics = {
         "total_raw_records": len(raw_records),
-        "valid_records": len(valid_records) - critical_count,
+        "valid_records": len(valid_records),
         "corrupted_records": corrupted_count,
         "critical_incidents": critical_count,
         "total_latency_seconds": total_latency_ms / 1000, # (total_ms / 1000) 
