@@ -48,7 +48,7 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
                 val.strip()
         # Type Cast
         record[2], record[3] = int(record[2]), float(record[3])
-        record[4] = bool(record[4]) if record[4] == "true" or record[4] == "1" else bool("")
+        record[4] = record[4].lower() in ("true", "1")
         if record[1] == "auth-service" and (record[2] >= 500 or record[3] > 1000.0):
             critical_count+=1
         records_copy[idx] = record # Update
@@ -63,7 +63,7 @@ def process_records(orig_records: list[str], filtered_records: list[str], corrup
         "corrupted_records": corrupted_count,
         "critical_incidents": critical_count,
         "total_latency_seconds": total_ms / 1000, # (total_ms / 1000) 
-        "average_latency_ms": round(total_ms / valid_records, 2)
+        "average_latency_ms": round(total_ms / valid_records, 2) if valid_records else 0.0
     }
     return metrics
 
