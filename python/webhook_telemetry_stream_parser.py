@@ -36,7 +36,6 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
         # Parse and Guard
         fields = [field.strip() for field in record.split("|")]
         # Validate
-        print(len(fields))
         if len(fields) != 5: 
             corrupted_count+=1
             continue 
@@ -45,6 +44,7 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
 
         if not service_name or service_name == "unknown":
             corrupted_count+=1
+            continue
 
         # Type Cast
         http_status = int(http_status_str)
