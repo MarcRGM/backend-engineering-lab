@@ -32,10 +32,11 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
     corrupted_count = 0
     critical_count = 0
     total_latency_ms = 0.0
-    for record in records_copy:
+    for record in records:
         # Parse and Guard
         fields = [field.strip() for field in record.split("|")]
         # Validate
+        print(len(fields))
         if len(fields) != 5: 
             corrupted_count+=1
             continue 
@@ -63,21 +64,19 @@ def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
             "is_retry": is_retry
         })
 
-    return valid_records, corrupted_count, critical_count
+    return valid_records, corrupted_count, critical_count, total_latency_ms
 
-def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int, critical_count: int) -> dict[str, int | float]:
-    total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)])
-    valid_records = len(orig_records) - corrupted_count
+def process_records(raw_records: list[str], valid_records: list[str], corrupted_count: int, critical_count: int, total_latency_ms: float) -> dict[str, int | float]:
     metrics = {
-        "total_raw_records": len(orig_records),
-        "valid_records": valid_records,
+        "total_raw_records": len(raw_records),
+        "valid_records": len(valid_records) - critical_count,
         "corrupted_records": corrupted_count,
         "critical_incidents": critical_count,
-        "total_latency_seconds": total_ms / 1000, # (total_ms / 1000) 
-        "average_latency_ms": round(total_ms / valid_records, 2) if valid_records else 0.0
+        "total_latency_seconds": total_latency_ms / 1000, # (total_ms / 1000) 
+        "average_latency_ms": round(total_latency_ms / len(valid_records), 2) if valid_records else 0.0
     }
     return metrics
 
 if __name__ == "__main__":
-    filtered_records, corrupted_count, critical_count = validate_and_filter(raw_stream)
-    print(process_records(raw_stream, filtered_records, corrupted_count, critical_count))
+    valid_records, corrupted_count, critical_count, total_latency_ms = validate_and_filter(raw_stream)
+    print(process_records(raw_stream, valid_records, corrupted_count, critical_count, total_latency_ms))
