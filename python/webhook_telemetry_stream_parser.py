@@ -28,31 +28,42 @@ raw_stream = [
 }
 
 def validate_and_filter(records: list[str]) -> tuple[list[str], int, int]:
-    records_copy = records.copy()
+    valid_records = []
     corrupted_count = 0
     critical_count = 0
-    for idx in range(len(records_copy)-1, -1, -1): # Start from end since pop shifts the index
-        record = records_copy[idx].split("|")
+    total_latency_ms = 0.0
+    for record in records_copy:
+        # Parse and Guard
+        fields = [field.strip() for field in record.split("|")]
         # Validate
-        if len(record) != 5: 
-            records_copy[idx] = "corrupted"
+        if len(fields) != 5: 
             corrupted_count+=1
             continue 
-        elif record[1] == "unknown" or record[1] == "": 
-            records_copy.pop(idx) 
+
+        timestamp, service_name, http_status_str, latency_ms_str, is_retry_str = fields
+
+        if not service_name or service_name == "unknown":
             corrupted_count+=1
-            continue
-        # Filter
-        for val in record:
-            if isinstance(val, str):
-                val.strip()
+
         # Type Cast
-        record[2], record[3] = int(record[2]), float(record[3])
-        record[4] = record[4].lower() in ("true", "1")
-        if record[1] == "auth-service" and (record[2] >= 500 or record[3] > 1000.0):
-            critical_count+=1
-        records_copy[idx] = record # Update
-    return records_copy, corrupted_count, critical_count
+        http_status = int(http_status_str)
+        latency_ms = float(latency_ms_str)
+        is_retry = is_retry_str.lower() in ("true", "1")
+
+        # Aggregate
+        total_latency_ms += latency_ms
+        if service_name == "auth-service" and (http_status >= 500 or latency_ms > 1000.0):
+            critical_count += 1
+
+        valid_records.append({
+            "timestamp": timestamp,
+            "service": service_name,
+            "status": http_status,
+            "latency": latency_ms,
+            "is_retry": is_retry
+        })
+
+    return valid_records, corrupted_count, critical_count
 
 def process_records(orig_records: list[str], filtered_records: list[str], corrupted_count: int, critical_count: int) -> dict[str, int | float]:
     total_ms = sum([record[3] for record in filtered_records if isinstance(record[3], float)])
