@@ -48,10 +48,19 @@ raw_requests = [
 
 def validate_and_filter(requests: list[dict]) -> list[dict]:
     seen_request = set()
+    tenant_metrics = {}
     dropped_deduplicates = 0
-    for user in requests:
-        if user["request_id"] in seen_request: # Deduplication
+    for req in requests:
+        if req["request_id"] in seen_request: # Deduplication
             dropped_deduplicates+=1
             continue
-        seen_request.add(user["request_id"])
+        seen_request.add(req["request_id"])
+        tenant_metrics.setdefault(req["tenant_id"], {})
+        tenant_metrics[req["tenant_id"]].setdefault("total_requests", 0)
+        tenant_metrics[req["tenant_id"]]["total_requests"]+=1
+        tenant_metrics[req["tenant_id"]].setdefault("total_mb", 0)
+        tenant_metrics[req["tenant_id"]]["total_mb"]+= req["bytes"]
+    return tenant_metrics
 
+if __name__ == "__main__":
+    print(validate_and_filter(raw_requests))
