@@ -59,7 +59,11 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
         tenant_metrics[req["tenant_id"]].setdefault("total_requests", 0)
         tenant_metrics[req["tenant_id"]]["total_requests"]+=1
         tenant_metrics[req["tenant_id"]].setdefault("total_mb", 0)
-        tenant_metrics[req["tenant_id"]]["total_mb"]+= req["bytes"]
+        tenant_metrics[req["tenant_id"]]["total_mb"]+= round((req["bytes"] / (1024*1024)), 4)
+        tenant_metrics[req["tenant_id"]].setdefault("error_rate", 0)
+        tenant_metrics[req["tenant_id"]]["error_rate"] += 1 if req["status_code"] >= 400 else 0
+        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", []).append(req["endpoint"])
+        
     return tenant_metrics
 
 if __name__ == "__main__":
