@@ -69,20 +69,24 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
         tenant_metrics[req["tenant_id"]]["total_mb"]+= round((req["bytes"] / (1024*1024)), 4)
         if highest_total_bandwith < tenant_metrics[req["tenant_id"]]["total_mb"]:
             highest_total_bandwith = tenant_metrics[req["tenant_id"]]["total_mb"]
-            top_tenant_by_bandwith = tenant_metrics[req["tenant_id"]]
+            top_tenant_by_bandwith = req["tenant_id"]
 
         # Error rate
-        tenant_metrics[req["tenant_id"]].setdefault("error_rate", 0)
+        tenant_metrics[req["tenant_id"]].setdefault("error_rate", 0.0)
         tenant_metrics[req["tenant_id"]]["error_rate"] += 1 if req["status_code"] >= 400 else 0
 
         # Endpoints
         tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", []).append(req["endpoint"])
+
+    for tenant in tenant_metrics:
+        tenant_metrics[tenant]["error_rate"] = round((tenant_metrics[tenant]["error_rate"] / tenant_metrics[tenant]["total_requests"]) * 100, 4)
+        tenant_metrics[tenant]["endpoints_hit"] = sorted(tenant_metrics[tenant]["endpoints_hit"])
 
     # Global Summary
     summary["total_tenants"] = len(tenant_metrics)
     summary["dropped_duplicates"] = dropped_deduplicates
     summary["top_tenant_by_bandwidth"] = top_tenant_by_bandwith
 
-    return tenant_metrics
+    return summary | {"tenant_metrics": tenant_metrics}
 if __name__ == "__main__":
     print(validate_and_filter(raw_requests))
