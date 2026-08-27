@@ -49,22 +49,40 @@ raw_requests = [
 def validate_and_filter(requests: list[dict]) -> list[dict]:
     seen_request = set()
     tenant_metrics = {}
+    summary = {}
     dropped_deduplicates = 0
+    top_tenant_by_bandwith = ""
+    highest_total_bandwith = 0
     for req in requests:
         if req["request_id"] in seen_request: # Deduplication
             dropped_deduplicates+=1
             continue
         seen_request.add(req["request_id"])
         tenant_metrics.setdefault(req["tenant_id"], {})
+
+        # Total request
         tenant_metrics[req["tenant_id"]].setdefault("total_requests", 0)
         tenant_metrics[req["tenant_id"]]["total_requests"]+=1
+
+        # Total mb and highest bandwith
         tenant_metrics[req["tenant_id"]].setdefault("total_mb", 0)
         tenant_metrics[req["tenant_id"]]["total_mb"]+= round((req["bytes"] / (1024*1024)), 4)
+        if highest_total_bandwith < tenant_metrics[req["tenant_id"]]["total_mb"]:
+            highest_total_bandwith = tenant_metrics[req["tenant_id"]]["total_mb"]
+            top_tenant_by_bandwith = tenant_metrics[req["tenant_id"]]
+
+        # Error rate
         tenant_metrics[req["tenant_id"]].setdefault("error_rate", 0)
         tenant_metrics[req["tenant_id"]]["error_rate"] += 1 if req["status_code"] >= 400 else 0
-        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", []).append(req["endpoint"])
-        
-    return tenant_metrics
 
+        # Endpoints
+        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", []).append(req["endpoint"])
+
+    # Global Summary
+    summary["total_tenants"] = len(tenant_metrics)
+    summary["dropped_duplicates"] = dropped_deduplicates
+    summary["top_tenant_by_bandwidth"] = top_tenant_by_bandwith
+
+    return tenant_metrics
 if __name__ == "__main__":
     print(validate_and_filter(raw_requests))
