@@ -66,7 +66,7 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
 
         # Total mb and highest bandwith
         tenant_metrics[req["tenant_id"]].setdefault("total_mb", 0)
-        tenant_metrics[req["tenant_id"]]["total_mb"]+= round((req["bytes"] / (1024*1024)), 4)
+        tenant_metrics[req["tenant_id"]]["total_mb"]+= (req["bytes"] / (1024*1024)), 4
         if highest_total_bandwith < tenant_metrics[req["tenant_id"]]["total_mb"]:
             highest_total_bandwith = tenant_metrics[req["tenant_id"]]["total_mb"]
             top_tenant_by_bandwith = req["tenant_id"]
@@ -76,9 +76,10 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
         tenant_metrics[req["tenant_id"]]["error_rate"] += 1 if req["status_code"] >= 400 else 0
 
         # Endpoints
-        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", []).append(req["endpoint"])
+        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", set()).append(req["endpoint"])
 
     for tenant in tenant_metrics:
+        tenant_metrics[tenant]["total_mb"] = round(tenant_metrics[tenant]["total_mb"], 4)
         tenant_metrics[tenant]["error_rate"] = round((tenant_metrics[tenant]["error_rate"] / tenant_metrics[tenant]["total_requests"]) * 100, 4)
         tenant_metrics[tenant]["endpoints_hit"] = sorted(tenant_metrics[tenant]["endpoints_hit"])
 
