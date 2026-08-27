@@ -46,7 +46,7 @@ raw_requests = [
     }
 }
 
-def validate_and_filter(requests: list[dict]) -> list[dict]:
+def validate_and_filter(requests: list[dict]) -> dict:
     seen_request = set()
     tenant_metrics = {}
     summary = {}
@@ -58,29 +58,35 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
             dropped_deduplicates+=1
             continue
         seen_request.add(req["request_id"])
-        tenant_metrics.setdefault(req["tenant_id"], {})
+
+        if req["tenant_id"] not in tenant_metrics:
+            tenant_metrics[req["tenant_id"]] = {
+                "total_requests": 0,
+                "total_mb": 0.0000,
+                "error_rate": 0.0,
+                "endpoints_hit": set()
+            }
+
+        entry = tenant_metrics[req["tenant_id"]]
 
         # Total request
-        tenant_metrics[req["tenant_id"]].setdefault("total_requests", 0)
-        tenant_metrics[req["tenant_id"]]["total_requests"]+=1
+        entry["total_requests"]+=1
 
         # Total mb and highest bandwith
-        tenant_metrics[req["tenant_id"]].setdefault("total_mb", 0)
-        tenant_metrics[req["tenant_id"]]["total_mb"]+= (req["bytes"] / (1024*1024)), 4
-        if highest_total_bandwith < tenant_metrics[req["tenant_id"]]["total_mb"]:
-            highest_total_bandwith = tenant_metrics[req["tenant_id"]]["total_mb"]
+        entry["total_mb"] += (req["bytes"] / (1024*1024))
+        if highest_total_bandwith < entry["total_mb"]:
+            highest_total_bandwith = entry["total_mb"]
             top_tenant_by_bandwith = req["tenant_id"]
 
         # Error rate
-        tenant_metrics[req["tenant_id"]].setdefault("error_rate", 0.0)
-        tenant_metrics[req["tenant_id"]]["error_rate"] += 1 if req["status_code"] >= 400 else 0
+        entry["error_rate"] += 1 if req["status_code"] >= 400 else 0
 
         # Endpoints
-        tenant_metrics[req["tenant_id"]].setdefault("endpoints_hit", set()).append(req["endpoint"])
+        entry["endpoints_hit"].add(req["endpoint"])
 
     for tenant in tenant_metrics:
         tenant_metrics[tenant]["total_mb"] = round(tenant_metrics[tenant]["total_mb"], 4)
-        tenant_metrics[tenant]["error_rate"] = round((tenant_metrics[tenant]["error_rate"] / tenant_metrics[tenant]["total_requests"]) * 100, 4)
+        tenant_metrics[tenant]["error_rate"] = round((tenant_metrics[tenant]["error_rate"] / tenant_metrics[tenant]["total_requests"]) * 100, 2)
         tenant_metrics[tenant]["endpoints_hit"] = sorted(tenant_metrics[tenant]["endpoints_hit"])
 
     # Global Summary
@@ -89,5 +95,6 @@ def validate_and_filter(requests: list[dict]) -> list[dict]:
     summary["top_tenant_by_bandwidth"] = top_tenant_by_bandwith
 
     return summary | {"tenant_metrics": tenant_metrics}
+
 if __name__ == "__main__":
     print(validate_and_filter(raw_requests))
