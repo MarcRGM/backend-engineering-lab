@@ -46,10 +46,9 @@ raw_requests = [
     }
 }
 
-def validate_and_filter(requests: list[dict]) -> dict:
+def validate_and_filter(requests: list[dict]) -> dict :
     seen_request = set()
     tenant_metrics = {}
-    summary = {}
     dropped_deduplicates = 0
     top_tenant_by_bandwith = ""
     highest_total_bandwith = 0
@@ -89,12 +88,14 @@ def validate_and_filter(requests: list[dict]) -> dict:
         tenant_metrics[tenant]["error_rate"] = round((tenant_metrics[tenant]["error_rate"] / tenant_metrics[tenant]["total_requests"]) * 100, 2)
         tenant_metrics[tenant]["endpoints_hit"] = sorted(tenant_metrics[tenant]["endpoints_hit"])
 
-    # Global Summary
-    summary["total_tenants"] = len(tenant_metrics)
-    summary["dropped_duplicates"] = dropped_deduplicates
-    summary["top_tenant_by_bandwidth"] = top_tenant_by_bandwith
-
-    return summary | {"tenant_metrics": tenant_metrics}
+    return {
+        "summary": {
+            "total_tenants": len(tenant_metrics),
+            "dropped_duplicates": dropped_deduplicates,
+            "top_tenant_by_bandwidth": top_tenant_by_bandwith
+        }, "tenant_metrics": tenant_metrics
+    }
 
 if __name__ == "__main__":
-    print(validate_and_filter(raw_requests))
+    output = validate_and_filter(raw_requests)
+    print(output)
