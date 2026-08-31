@@ -4,8 +4,8 @@
 # The dispatcher receives a batch of raw command payloads. 
 # It must validate each payload against required fields, 
 # enforce business constraints, convert data types safely, and route successful actions 
-# while capturing structured error logs for bad requests—all without 
-# allowing any unhandled exceptions to crash the dispatcher.
+# while capturing structured error logs for bad requests,
+# all without allowing any unhandled exceptions to crash the dispatcher.
 
 raw_commands = [
     {"command_id": "cmd-101", "service": "billing", "action": "DEPOSIT", "amount": "250.75"},
@@ -38,3 +38,20 @@ raw_commands = [
         {"command_id": "UNKNOWN", "error_type": "ValidationError", "reason": "Missing required field: command_id"}
     ]
 }
+
+class PipelineError(Exception):
+    """Base Domain Exception"""
+    pass
+
+class ValidationError(PipelineError):
+    """Raised for missing keys, empty strings, uncastable types, or booleans passed as numbers."""
+    pass
+
+class BusinessRuleViolationError(PipelineError):
+    """Raised for invalid action strings or non-positive amounts."""
+    pass
+
+def validate_and_sanitize_command(command: dict) -> dict:
+    
+def dispatch_batch(commands: list[dict]) -> dict:
+
