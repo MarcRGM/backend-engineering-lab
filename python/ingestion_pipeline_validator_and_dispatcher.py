@@ -51,7 +51,52 @@ class BusinessRuleViolationError(PipelineError):
     """Raised for invalid action strings or non-positive amounts."""
     pass
 
-def validate_and_sanitize_command(command: dict) -> dict:
-    
-def dispatch_batch(commands: list[dict]) -> dict:
+def validate_and_sanitize_command(cmd: dict) -> dict:
+    keys = ("command_id", "service", "action", "amount")
+    actions = ("DEPOSIT", "WITHDRAW", "TRANSFER")
+    command_id = ""
+    service = ""
+    amount = 0
+    action = ""
+    try:
+        for key in cmd:
+            if key not in keys: raise ValidationError(f"Missing required field: {key}")
 
+        command_id = str(cmd["command_id"]).strip()
+        service = str(cmd["service"]).strip()
+        if not command_id or not service:
+            raise ValidationError(f"{"Command_id" if not command_id else "Service"} name cannot be empty") 
+
+        action = cmd["actions"]
+        if action not in actions:
+            raise BusinessRuleViolationError(f"Unsupported action: {cmd["actions"]}")
+
+        if isinstance(cmd["amount"], bool):
+            raise ValidationError("Amount must be a numeric value")
+        try:
+            amount = float(cmd["amount"])
+        except ValidationError:
+            raise ValidationError("Amount must be a numeric value")
+        else:
+            if amount <= 0:
+                raise BusinessRuleViolationError("Amount must be strictly positive")
+    except PipelineError as exc:
+        return {
+            "command_id": cmd["command_id"] if cmd["command_id"] else "UNKNOWN",
+            "error_type": type(exc).__name__,
+            "reason": str(exc)
+        }
+    else:
+        return {
+            "command_id": command_id,
+            "service": service,
+            "action": action,
+            "amount": amount
+        }
+
+    
+    
+# def dispatch_batch(cmds: list[dict]) -> dict:
+
+if __name__ == "__main__":
+    print(validate_and_sanitize_command(cmd) for cmd in raw_commands)
