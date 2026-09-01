@@ -54,10 +54,6 @@ class BusinessRuleViolationError(PipelineError):
 def validate_and_sanitize_command(cmd: dict) -> dict:
     keys = ("command_id", "service", "action", "amount")
     actions = ("DEPOSIT", "WITHDRAW", "TRANSFER")
-    command_id = ""
-    service = ""
-    amount = 0
-    action = ""
 
     for key in keys:
         if key not in cmd: 
@@ -113,7 +109,7 @@ def dispatch_batch(cmds: list[dict]) -> dict:
 
     return {
         "summary": {
-            "toatl": total,
+            "total": total,
             "succeeded": succeeded,
             "failed": failed
         },
