@@ -54,7 +54,6 @@ class BusinessRuleViolationError(PipelineError):
 def validate_and_sanitize_command(cmd: dict) -> dict:
     keys = ("command_id", "service", "action", "amount")
     actions = ("DEPOSIT", "WITHDRAW", "TRANSFER")
-    missing_key = ""
     command_id = ""
     service = ""
     amount = 0
@@ -62,7 +61,6 @@ def validate_and_sanitize_command(cmd: dict) -> dict:
 
     for key in keys:
         if key not in cmd: 
-            missing_key = key
             raise ValidationError(f"Missing required field: {key}")
 
     command_id = str(cmd["command_id"]).strip()
@@ -98,11 +96,31 @@ def dispatch_batch(cmds: list[dict]) -> dict:
     processed_commands, failed_commands = [], []
 
     for cmd in cmds:
+        total+=1
+        temp_dict = {}
         try:
-            validate_and_sanitize_command(cmd)
+            temp_dict = validate_and_sanitize_command(cmd)
         except PipelineError as exc:
-            
-        else: 
+            failed+=1
+            failed_commands.append({
+                "command_id": cmd.get("command_id", "UNKNOWN"),
+                "error_type": type(exc).__name__,
+                "reason": str(exc)
+            })
+        else:
+            succeeded+=1
+            processed_commands.append(temp_dict)
+
+    return {
+        "summary": {
+            "toatl": total,
+            "succeeded": succeeded,
+            "failed": failed
+        },
+        "processed_commands": processed_commands,
+        "failed_commands": failed_commands
+    }
+
 
 if __name__ == "__main__":
-    print([validate_and_sanitize_command(cmd) for cmd in raw_commands])
+    print(dispatch_batch(raw_commands))
