@@ -59,45 +59,50 @@ def validate_and_sanitize_command(cmd: dict) -> dict:
     service = ""
     amount = 0
     action = ""
+
+    for key in keys:
+        if key not in cmd: 
+            missing_key = key
+            raise ValidationError(f"Missing required field: {key}")
+
+    command_id = str(cmd["command_id"]).strip()
+    service = str(cmd["service"]).strip()
+    if not command_id or not service:
+        raise ValidationError(f"{"Command_id" if not command_id else "Service"} name cannot be empty") 
+
+    action = cmd["action"]
+    if action not in actions:
+        raise BusinessRuleViolationError(f"Unsupported action: {cmd["action"]}")
+
+    if isinstance(cmd["amount"], bool):
+        raise ValidationError("Amount must be a numeric value")
     try:
-        for key in keys:
-            if key not in cmd: 
-                missing_key = key
-                raise ValidationError(f"Missing required field: {key}")
+        amount = float(cmd["amount"])
+    except (ValueError, TypeError):
+        raise ValidationError("Amount must be a numeric value")
+    else:
+        if amount <= 0:
+            raise BusinessRuleViolationError("Amount must be strictly positive")
 
-        command_id = str(cmd["command_id"]).strip()
-        service = str(cmd["service"]).strip()
-        if not command_id or not service:
-            raise ValidationError(f"{"Command_id" if not command_id else "Service"} name cannot be empty") 
+    return {
+        "command_id": command_id,
+        "service": service,
+        "action": action,
+        "amount": amount
+    }
 
-        action = cmd["action"]
-        if action not in actions:
-            raise BusinessRuleViolationError(f"Unsupported action: {cmd["action"]}")
+def dispatch_batch(cmds: list[dict]) -> dict:
+    total = 0
+    succeeded = 0
+    failed= 0
+    processed_commands, failed_commands = [], []
 
-        if isinstance(cmd["amount"], bool):
-            raise ValidationError("Amount must be a numeric value")
+    for cmd in cmds:
         try:
-            amount = float(cmd["amount"])
-        except (ValueError, TypeError):
-            raise ValidationError("Amount must be a numeric value")
-        else:
-            if amount <= 0:
-                raise BusinessRuleViolationError("Amount must be strictly positive")
-    except PipelineError as exc:
-        return {
-            "command_id": "UNKNOWN" if missing_key == "command_id" else cmd["command_id"],
-            "error_type": type(exc).__name__,
-            "reason": str(exc)
-        }
-    else: 
-        return {
-            "command_id": command_id,
-            "service": service,
-            "action": action,
-            "amount": amount
-        }
-
-# def dispatch_batch(cmds: list[dict]) -> dict:
+            validate_and_sanitize_command(cmd)
+        except PipelineError as exc:
+            
+        else: 
 
 if __name__ == "__main__":
     print([validate_and_sanitize_command(cmd) for cmd in raw_commands])
