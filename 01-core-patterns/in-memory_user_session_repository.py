@@ -43,9 +43,16 @@ Revoke non-existent: False
 """
 
 class UserSession:
+    VALID_SCOPE = {"READ", "ADMIN"}
     def __init__(self, session_id: str, user_id: int, scope: str):
-        pass
-
+        if not isinstance(session_id, str) or not session_id.strip():
+            raise ValueError("Invalid session_id")
+        self.session_id = session_id.strip()
+        if not isinstance(user_id, int) or isinstance(user_id, bool) or user_id <= 0:
+            raise ValueError("Invalid user_id")
+        if scope not in self.VALID_SCOPE:
+            raise ValueError("Invalid scope")
+        self._is_active = True 
 
 class SessionRepository:
     def __init__(self):
