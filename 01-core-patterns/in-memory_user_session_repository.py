@@ -54,6 +54,26 @@ class UserSession:
             raise ValueError("Invalid scope")
         self._is_active = True 
 
+    @property
+    def session_id(self) -> str:
+        return self.session_id
+
+    @property
+    def user_id(self) -> int:
+        return self.user_id
+
+    @property
+    def scope(self) -> str:
+        return self.scope
+
+    def revoke(self) -> None:
+        self._is_active = False
+
+    def __repr__(self) -> str:
+        return f"UserSession(id={self.session_id!r}, user_id={self.user_id}, active={self.is_active})"
+
+    
+
 class SessionRepository:
     def __init__(self):
         pass
