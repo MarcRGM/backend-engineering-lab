@@ -90,10 +90,11 @@ class SessionRepository:
     def revoke_session(self, session_id: str) -> bool:
         if session_id not in self._sessions: return False
         self._sessions[session_id].revoke()
+        return True
 
     def list_active_sessions(self, user_id: int | None = None) -> list[UserSession]: 
-        if user_id is not None: # Compare the user id in each session.user_id and return the session
-            return [self._sessions[session] for session in self._sessions if user_id == self._sessions[session].user_id]
+        if user_id is not None: # Compare the user id in each session.user_id and return the active session
+            return [self._sessions[session] for session in self._sessions if user_id == self._sessions[session].user_id and self._sessions[session]._is_active == True]
         # if user id is None, return list of all sessions active
         return [self._sessions[session] for session in self._sessions if self._sessions[session]._is_active == True]
 
