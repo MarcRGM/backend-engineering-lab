@@ -97,10 +97,10 @@ class SessionRepository:
         return True
 
     def list_active_sessions(self, user_id: int | None = None) -> list[UserSession]: 
-        if user_id is not None: # Compare the user id in each session.user_id and return the active session
-            return [session for session in self._sessions.values() if user_id == session.user_id and session for session in self._sessions.values()._is_active]
-        # if user id is None, return list of all sessions active
-        return [session for session in self._sessions.values() if session._is_active]
+        return [ # List comprehension
+            sess for sess in self._sessions.values()
+            if sess.is_active and (user_id is None or user_id == sess.user_id) 
+        ] # Either return all active session if user_id is None or only return the active sessions with the user_id given
 
     def count(self) -> int:
         return len(self._sessions)
