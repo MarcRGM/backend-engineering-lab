@@ -50,8 +50,10 @@ class UserSession:
         self.session_id = session_id.strip()
         if not isinstance(user_id, int) or isinstance(user_id, bool) or user_id <= 0:
             raise ValueError("Invalid user_id")
+        self.user_id = user_id
         if scope not in self.VALID_SCOPE:
             raise ValueError("Invalid scope")
+        self.scope = scope
         self._is_active = True 
 
     @property
@@ -70,10 +72,27 @@ class UserSession:
         self._is_active = False
 
     def __repr__(self) -> str:
-        return f"UserSession(id={self.session_id!r}, user_id={self.user_id}, active={self.is_active})"
-
-    
+        return f"UserSession(id={self.session_id!r}, user_id={self.user_id}, active={self._is_active})"
 
 class SessionRepository:
     def __init__(self):
-        pass
+        self._sessions: dict[str, UserSession] = {}
+
+    def create_session(self, session_id: str, user_id: int, scope: str) -> UserSession:
+        if session_id in self._sessions:
+            raise ValueError(f"Session {session_id} already exists")
+        self._sessions[session_id] = UserSession(session_id, user_id, scope)
+        return self._sessions[session_id]
+
+    def get_session(self, session_id: str) -> UserSession | None:
+        return self._sessions.get(session_id, None)
+
+    def revoke_session(self, session_id: str) -> bool:
+        if session_id not in self._sessions: return False
+        self._sessions[session_id].revoke()
+
+    def list_active_sessions(self, user_id: int | None = None) -> list[UserSession]: 
+        if user_id is not None: # Compare the user id in each session.user_id and return the session
+            return [self._session[session] for session in self._sessions if user_id == self._sessions[session].user_id]
+        # if user id is None, return list of all sessions active
+        return [self._sessions[session] for session in self._sessions if self._sessions[session]._is_active == True]
