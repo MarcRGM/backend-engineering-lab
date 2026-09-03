@@ -47,26 +47,26 @@ class UserSession:
     def __init__(self, session_id: str, user_id: int, scope: str):
         if not isinstance(session_id, str) or not session_id.strip():
             raise ValueError("Invalid session_id")
-        self.session_id = session_id.strip()
+        self._session_id = session_id.strip()
         if not isinstance(user_id, int) or isinstance(user_id, bool) or user_id <= 0:
             raise ValueError("Invalid user_id")
-        self.user_id = user_id
+        self._user_id = user_id
         if scope not in self.VALID_SCOPE:
             raise ValueError("Invalid scope")
-        self.scope = scope
+        self._scope = scope
         self._is_active = True 
 
     @property
     def session_id(self) -> str:
-        return self.session_id
+        return self._session_id
 
     @property
     def user_id(self) -> int:
-        return self.user_id
+        return self._user_id
 
     @property
     def scope(self) -> str:
-        return self.scope
+        return self._scope
 
     def revoke(self) -> None:
         self._is_active = False
@@ -93,6 +93,32 @@ class SessionRepository:
 
     def list_active_sessions(self, user_id: int | None = None) -> list[UserSession]: 
         if user_id is not None: # Compare the user id in each session.user_id and return the session
-            return [self._session[session] for session in self._sessions if user_id == self._sessions[session].user_id]
+            return [self._sessions[session] for session in self._sessions if user_id == self._sessions[session].user_id]
         # if user id is None, return list of all sessions active
         return [self._sessions[session] for session in self._sessions if self._sessions[session]._is_active == True]
+
+    def count(self) -> int:
+        return len(self._sessions)
+
+if __name__ == "__main__":
+    repo = SessionRepository()
+
+    # 1. Create sessions
+    s1 = repo.create_session("sess-001", user_id=10, scope="READ")
+    s2 = repo.create_session("sess-002", user_id=10, scope="ADMIN")
+    s3 = repo.create_session("sess-003", user_id=20, scope="READ")
+
+    # 2. Inspect representations and queries
+    print("Total stored:", repo.count())
+    print("All active:", repo.list_active_sessions())
+    print("Active for user 10:", repo.list_active_sessions(user_id=10))
+
+    # 3. Revoke one session
+    revoked = repo.revoke_session("sess-002")
+    print("Revoke sess-002 succeeded:", revoked)
+
+    # 4. Check active for user 10 again
+    print("Active for user 10 after revoke:", repo.list_active_sessions(user_id=10))
+
+    # 5. Revoke a non-existent session
+    print("Revoke non-existent:", repo.revoke_session("sess-999"))
