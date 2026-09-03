@@ -68,6 +68,10 @@ class UserSession:
     def scope(self) -> str:
         return self._scope
 
+    @property
+    def is_active(self) -> bool:
+        return self._is_active
+
     def revoke(self) -> None:
         self._is_active = False
 
@@ -94,9 +98,9 @@ class SessionRepository:
 
     def list_active_sessions(self, user_id: int | None = None) -> list[UserSession]: 
         if user_id is not None: # Compare the user id in each session.user_id and return the active session
-            return [self._sessions[session] for session in self._sessions if user_id == self._sessions[session].user_id and self._sessions[session]._is_active == True]
+            return [session for session in self._sessions.values() if user_id == session.user_id and session for session in self._sessions.values()._is_active]
         # if user id is None, return list of all sessions active
-        return [self._sessions[session] for session in self._sessions if self._sessions[session]._is_active == True]
+        return [session for session in self._sessions.values() if session._is_active]
 
     def count(self) -> int:
         return len(self._sessions)
